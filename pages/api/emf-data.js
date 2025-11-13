@@ -3,7 +3,6 @@ import { rtdb } from '../../lib/firebaseAdmin';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
-
   const token = req.body.token || req.headers['x-api-token'];
   if (!token || token !== process.env.API_TOKEN) return res.status(401).json({ error: 'Unauthorized' });
 
@@ -21,12 +20,12 @@ export default async function handler(req, res) {
     const ref = await rtdb.ref('/emf_readings').push(payload);
     const key = ref.key;
 
-    // update latest per-zone pointer
+    // update zone latest
     if (zone !== null) {
       await rtdb.ref(`/zones/${zone}/latest_emf`).set({ ...payload, id: key });
     }
 
-    // Optionally keep a small "latest" queue for live charts
+    // optionally keep a "latest" queue for charts
     await rtdb.ref('/emf_readings/latest').push({ ...payload, id: key });
 
     return res.json({ status: 'ok', id: key });

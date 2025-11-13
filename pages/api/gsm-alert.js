@@ -3,7 +3,6 @@ import { rtdb } from '../../lib/firebaseAdmin';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
-
   const token = req.body.token || req.headers['x-api-token'];
   if (!token || token !== process.env.API_TOKEN) return res.status(401).json({ error: 'Unauthorized' });
 
@@ -31,11 +30,11 @@ export default async function handler(req, res) {
       created_at: new Date().toISOString()
     };
 
-    // push to RTDB `alerts` list
+    // push to RTDB `alerts`
     const ref = await rtdb.ref('/alerts').push(payload);
     const pushKey = ref.key;
 
-    // Optionally also write a per-zone latest pointer:
+    // update per-zone pointers (optional)
     if (zone !== null) {
       await rtdb.ref(`/zones/${zone}/last_alert`).set({ ...payload, id: pushKey });
     }

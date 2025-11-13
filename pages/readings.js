@@ -1,25 +1,53 @@
-import { getPool } from './db';
+// pages/readings.js
+import { useState, useEffect } from 'react';
 
-export default async function handler(req, res) {
-  const q = req.query;
-  const limit = parseInt(q.limit) || 100;
-  const zone = q.zone ? parseInt(q.zone) : null;
+export default function ReadingsPage() {
+  const [rows, setRows] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  const pool = await getPool();
-  try {
-    let sql = 'SELECT * FROM emf_readings';
-    const params = [];
-    if (zone) {
-      sql += ' WHERE zone = ?';
-      params.push(zone);
+  useEffect(() => {
+    let mounted = true;
+    async function load() {
+      try {
+        const res = await fetch('/api/readings?limit=100');
+        if (!res.ok) throw new Error('Failed to load readings');
+        const data = await res.json();
+        if (mounted) setRows(data.rows || []);
+      } catch (err) {
+        console.error(err);
+        if (mounted) setError(err.message);
+      } finally {
+        if (mounted) setLoading(false);
+      }
     }
-    sql += ' ORDER BY created_at DESC LIMIT ?';
-    params.push(limit);
+    load();
+    return () => { mounted = false; };
+  }, []);
 
-    const [rows] = await pool.query(sql, params);
-    return res.json({ rows });
-  } catch (err) {
-    console.error('readings error', err);
-    return res.status(500).json({ error: 'DB error' });
-  }
+  if (loading) return <div style={{padding:20}}>Loading…</div>;
+  if (error) return <div style={{padding:20,color:'red'}}>Error: {error}</div>;
+
+  return (
+    <div style={{ padding: 20 }}>
+      <h1>History</h1>
+      <table border={1} cellPadding={6} cellSpacing={0}>
+        <thead>
+          <tr><th>ID</th><th>Zone</th><th>EMF</th><th>Lat</th><th>Lon</th><th>Time</th></tr>
+        </thead>
+        <tbody>
+          {rows.map(r => (
+            <tr key={r.id}>
+              <td>{r.id}</td>
+              <td>{r.zone}</td>
+              <td>{r.emf}</td>
+              <td>{r.lat}</td>
+              <td>{r.lon}</td>
+              <td>{new Date(r.created_at).toLocaleString()}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
 }

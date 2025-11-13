@@ -1,20 +1,21 @@
-import { getPool } from './db';
-import jwt from 'jsonwebtoken';
-import bcrypt from 'bcryptjs';
+// pages/api/db.js
+// Server-side only DB helper using mysql2/promise (works on Vercel if you provide MYSQL_* env vars)
+import mysql from 'mysql2/promise';
 
-export default async function handler(req, res) {
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
-  const { username, password } = req.body;
-  if (!username || !password) return res.status(400).json({ error: 'Missing fields' });
+let pool = global.__mysqlPool || null;
 
-  const pool = await getPool();
-  const [rows] = await pool.query('SELECT id, username, password FROM users WHERE username = ? LIMIT 1', [username]);
-  if (!rows || rows.length === 0) return res.status(401).json({ error: 'Invalid' });
-
-  const user = rows[0];
-  const ok = await bcrypt.compare(password, user.password);
-  if (!ok) return res.status(401).json({ error: 'Invalid' });
-
-  const token = jwt.sign({ id: user.id, username: user.username }, process.env.JWT_SECRET, { expiresIn: '8h' });
-  return res.json({ status: 'ok', token });
+export async function getPool() {
+  if (pool) return pool;
+  pool = mysql.createPool({
+    host: process.env.MYSQL_HOST,
+    port: process.env.MYSQL_PORT ? Number(process.env.MYSQL_PORT) : 3306,
+    user: process.env.MYSQL_USER,
+    password: process.env.MYSQL_PASSWORD,
+    database: process.env.MYSQL_DATABASE,
+    waitForConnections: true,
+    connectionLimit: 5,
+    queueLimit: 0,
+  });
+  global.__mysqlPool = pool;
+  return pool;
 }

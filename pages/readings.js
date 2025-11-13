@@ -11,7 +11,7 @@ export default function ReadingsPage() {
     async function load() {
       try {
         const res = await fetch('/api/readings?limit=100');
-        if (!res.ok) throw new Error('Failed to load readings');
+        if (!res.ok) throw new Error('Failed to load readings: ' + res.status);
         const data = await res.json();
         if (mounted) setRows(data.rows || []);
       } catch (err) {

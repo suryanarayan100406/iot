@@ -1,4 +1,4 @@
-// pages/readings.js
+cat > pages/readings.js <<'JS'
 import { useState, useEffect } from 'react';
 
 export default function ReadingsPage() {
@@ -51,3 +51,7 @@ export default function ReadingsPage() {
     </div>
   );
 }
+JS
+
+# show the first 40 lines to verify
+sed -n '1,40p' pages/readings.js
